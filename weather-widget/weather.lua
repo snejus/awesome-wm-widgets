@@ -15,7 +15,6 @@ local beautiful = require("beautiful")
 
 local HOME_DIR = os.getenv("HOME")
 local WIDGET_DIR = HOME_DIR .. '/.config/awesome/awesome-wm-widgets/weather-widget'
-local GET_FORECAST_CMD = [[bash -c "curl -s --show-error -X GET '%s'"]]
 
 local SYS_LANG = os.getenv("LANG"):sub(1, 2)
 if SYS_LANG == "C" or SYS_LANG == "C." then
@@ -140,7 +139,6 @@ local function worker(user_args)
     end
 
     local coordinates = args.coordinates
-    local api_key = args.api_key
     local font_name = args.font_name or beautiful.font:gsub("%s%d+$", "")
     local units = args.units or 'metric'
     local time_format_12h = args.time_format_12h
@@ -152,13 +150,21 @@ local function worker(user_args)
     local timeout = args.timeout or 120
 
     local ICONS_DIR = WIDGET_DIR .. '/icons/' .. icon_pack_name .. '/'
-    local owm_one_cal_api =
-        ('https://api.openweathermap.org/data/2.5/onecall' ..
-            '?lat=' .. coordinates[1] .. '&lon=' .. coordinates[2] .. '&appid=' .. api_key ..
-            '&units=' .. units .. '&exclude=minutely' ..
-            (show_hourly_forecast == false and ',hourly' or '') ..
-            (show_daily_forecast == false and ',daily' or '') ..
-            '&lang=' .. LANG)
+    local owm_one_call_api = string.format(
+        "get_weather_data %s %s %s",
+        coordinates[1],
+        coordinates[2],
+        string.format(
+            "units=%s&exclude=%s&lang=%s",
+            units,
+            (
+                "minutely"
+                .. (show_hourly_forecast == false and "hourly" or "")
+                .. (show_daily_forecast == false and ",daily" or "")
+            ),
+            LANG
+        )
+    )
 
     weather_widget = wibox.widget {
         {
@@ -242,6 +248,11 @@ local function worker(user_args)
             },
             {
                 {
+                    id = 'location',
+                    font = font_name .. ' 9',
+                    widget = wibox.widget.textbox
+                },
+                {
                     id = 'wind',
                     font = font_name .. ' 9',
                     widget = wibox.widget.textbox
@@ -272,6 +283,7 @@ local function worker(user_args)
             self:get_children_by_id('feels_like_temp')[1]:set_text(
                 LCLE.feels_like .. gen_temperature_str(weather.feels_like, '%.0f', false, units))
             self:get_children_by_id('description')[1]:set_text(weather.weather[1].description)
+            self:get_children_by_id('location')[1]:set_markup(LCLE.location .. '<b>' .. weather.location .. '</b>')
             self:get_children_by_id('wind')[1]:set_markup(
                 LCLE.wind .. '<b>' .. weather.wind_speed .. 'm/s (' .. to_direction(weather.wind_deg) .. ')</b>')
             self:get_children_by_id('humidity')[1]:set_markup(LCLE.humidity .. '<b>' .. weather.humidity .. '%</b>')
@@ -564,8 +576,8 @@ local function worker(user_args)
         end)))
 
     watch(
-        string.format(GET_FORECAST_CMD, owm_one_cal_api),
-        timeout,  -- API limit is 1k req/day; day has 1440 min; every 2 min is good
+        owm_one_call_api,
+        timeout, -- API limit is 1k req/day; day has 1440 min; every 2 min is good
         update_widget, weather_widget
     )
 

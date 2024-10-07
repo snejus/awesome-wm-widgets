@@ -6,6 +6,7 @@ local en = {
         "WSW", "W", "WNW", "NW", "NNW", "N"
     },
     feels_like = "Feels like ",
+    location = "Location: ",
     wind = "Wind: ",
     humidity = "Humidity: ",
     uv = "UV: "

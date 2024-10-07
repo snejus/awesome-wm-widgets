@@ -180,6 +180,7 @@ local function worker(user_args)
                 },
                 {
                     id = 'txt',
+                    font = font_name .. ' 13',
                     widget = wibox.widget.textbox
                 },
                 layout = wibox.layout.fixed.horizontal,

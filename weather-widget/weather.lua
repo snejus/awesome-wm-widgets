@@ -578,17 +578,20 @@ local function worker(user_args)
             bg = beautiful.bg_normal,
             widget = wibox.container.background,
         }
+        weather_widget.popup = weather_popup
     end
 
-    weather_widget:buttons(gears.table.join(awful.button({}, 1, function()
-        if weather_popup.visible then
-            weather_widget:set_bg("#00000000")
-            weather_popup.visible = not weather_popup.visible
+    function weather_widget:toggle()
+        if self.popup.visible then
+            self:set_bg("#00000000")
+            self.popup.visible = not self.popup.visible
         else
-            weather_widget:set_bg(beautiful.bg_focus)
-            weather_popup:move_next_to(mouse.current_widget_geometry)
+            self:set_bg(beautiful.bg_focus)
+            self.popup:move_next_to(mouse.current_widget_geometry)
         end
-    end)))
+    end
+
+    weather_widget:buttons(gears.table.join(awful.button({}, 1, function() weather_widget:toggle() end)))
 
     watch(
         owm_one_call_api,
